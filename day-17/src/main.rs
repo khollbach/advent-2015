@@ -1,6 +1,6 @@
-use std::{cmp::min, io};
+use std::io;
 
-use anyhow::{ensure, Result};
+use anyhow::Result;
 
 /*
 input: Vec<u32>
@@ -64,19 +64,16 @@ fn main() -> Result<()> {
     let subsets = subsets(&nums);
 
     let mut min_size = usize::MAX;
-    for set in &subsets {
-        let sum: u32 = set.iter().copied().sum();
-        if sum == 150 {
-            min_size = min(min_size, set.len());
-        }
-    }
-    ensure!(min_size != 0);
-
     let mut num_ways = 0; // (using only min_size buckets)
     for set in &subsets {
         let sum: u32 = set.iter().copied().sum();
-        if sum == 150 && set.len() == min_size {
-            num_ways += 1;
+        if sum == 150 {
+            if set.len() < min_size {
+                min_size = set.len();
+                num_ways = 1;
+            } else if set.len() == min_size {
+                num_ways += 1;
+            }
         }
     }
 
