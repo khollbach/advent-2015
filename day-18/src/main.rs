@@ -84,6 +84,12 @@ fn neighbors(p: Point) -> Vec<Point> {
     for dr in [-1, 0, 1] {
         for dc in [-1, 0, 1] {
             let delta = Point::new(dr, dc);
+
+            // oops -- I forgot to include this at first
+            if delta == Point::new(0, 0) {
+                continue;
+            }
+
             let p2 = p + delta;
             if in_bounds(p2) {
                 out.push(p2);
@@ -99,7 +105,7 @@ fn in_bounds(p: Point) -> bool {
     row && col
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 struct Point {
     row: isize,
     col: isize,
@@ -122,8 +128,7 @@ impl Add for Point {
     }
 }
 
-// 100 -- too low
-fn attempt_1() -> Result<()> {
+fn main() -> Result<()> {
     let mut grid = read_input()?;
     for _ in 0..100 {
         grid.step();
@@ -132,5 +137,3 @@ fn attempt_1() -> Result<()> {
     println!("{ans}");
     Ok(())
 }
-
-fn main() {}
