@@ -1,6 +1,6 @@
-use std::io;
+use std::{cmp::min, io};
 
-use anyhow::Result;
+use anyhow::{ensure, Result};
 
 /*
 input: Vec<u32>
@@ -35,7 +35,7 @@ fn subsets(xs: &[u32]) -> Vec<Vec<u32>> {
     out
 }
 
-fn main() -> Result<()> {
+fn _main() -> Result<()> {
     let mut nums = vec![];
     for line in io::stdin().lines() {
         let x: u32 = line?.parse()?;
@@ -49,6 +49,37 @@ fn main() -> Result<()> {
             num_ways += 1;
         }
     }
+    println!("{num_ways}");
+
+    Ok(())
+}
+
+fn main() -> Result<()> {
+    let mut nums = vec![];
+    for line in io::stdin().lines() {
+        let x: u32 = line?.parse()?;
+        nums.push(x);
+    }
+
+    let subsets = subsets(&nums);
+
+    let mut min_size = usize::MAX;
+    for set in &subsets {
+        let sum: u32 = set.iter().copied().sum();
+        if sum == 150 {
+            min_size = min(min_size, set.len());
+        }
+    }
+    ensure!(min_size != 0);
+
+    let mut num_ways = 0; // (using only min_size buckets)
+    for set in &subsets {
+        let sum: u32 = set.iter().copied().sum();
+        if sum == 150 && set.len() == min_size {
+            num_ways += 1;
+        }
+    }
+
     println!("{num_ways}");
 
     Ok(())
