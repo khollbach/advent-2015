@@ -77,6 +77,18 @@ impl Grid {
         }
         count
     }
+
+    fn force_corners_lit(&mut self) {
+        let n = N as isize;
+        for (row, col) in [
+            (0, 0),
+            (0, n-1),
+            (n-1, 0),
+            (n-1, n-1),
+        ] {
+            self.set(Point { row, col }, true);
+        }
+    }
 }
 
 fn neighbors(p: Point) -> Vec<Point> {
@@ -128,10 +140,22 @@ impl Add for Point {
     }
 }
 
-fn main() -> Result<()> {
+fn _main() -> Result<()> {
     let mut grid = read_input()?;
     for _ in 0..100 {
         grid.step();
+    }
+    let ans = grid.num_lit();
+    println!("{ans}");
+    Ok(())
+}
+
+fn main() -> Result<()> {
+    let mut grid = read_input()?;
+    grid.force_corners_lit();
+    for _ in 0..100 {
+        grid.step();
+        grid.force_corners_lit();
     }
     let ans = grid.num_lit();
     println!("{ans}");
