@@ -1,141 +1,90 @@
-use std::{
-    collections::{HashMap, HashSet},
-    io,
-};
+mod input;
 
-use anyhow::{ensure, Context, Result};
-use itertools::Itertools;
+use std::collections::{HashMap, HashSet, VecDeque};
 
-// rules: HashMap<Elem, Vec<Seq>>
-// initial_seq: Seq
+use anyhow::Result;
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Elem {
     code: String,
 }
 
 type Seq = Vec<Elem>;
 
-/*
+type Rules = HashMap<Elem, Vec<Seq>>;
+type RevRules = HashMap<Seq, Vec<Elem>>;
 
-1. split the input sequence up into elements
-2. parse the "rules" map
-
-3. for each pos'n in the input-seq, apply any rules that match that elem.
-3.5 build up an output HashSet of Seqs we can get to this way.
-
-*/
-
-fn possible_seqs(init_seq: Seq, rules: &Rules) -> HashSet<Seq> {
-    let mut out = HashSet::new();
-    for i in 0..init_seq.len() {
-        let elem = &init_seq[i];
-        let Some(replacements) = rules.get(elem) else {
-            continue;
-        };
-        for r in replacements {
-            let mut new_seq = Vec::with_capacity(init_seq.len() + r.len());
-            new_seq.extend_from_slice(&init_seq[..i]);
-            new_seq.extend_from_slice(&r);
-            new_seq.extend_from_slice(&init_seq[i + 1..]);
-            out.insert(new_seq);
+fn reverse_rules(rules: &Rules) -> RevRules {
+    let mut out = RevRules::new();
+    for (elem, seqs) in rules {
+        for seq in seqs {
+            out.entry(seq.clone()).or_default().push(elem.clone());
         }
     }
     out
 }
 
-type Rules = HashMap<Elem, Vec<Seq>>;
-
-/// Let's not worry about *validating* the input.
-fn read_input() -> Result<(Rules, Seq)> {
-    let mut lines = io::stdin().lines();
-
-    let mut rules = Rules::new();
-    for l in &mut lines {
-        let l = l?;
-        let l = l.trim();
-        if l.is_empty() {
-            break;
-        }
-
-        let (elem, seq) = parse_rule(l)?;
-        rules.entry(elem).or_default().push(seq);
-    }
-
-    let (l,) = lines
-        .collect_tuple()
-        .context("expected only one line after rules")?;
-    let init_seq = parse_seq(&l?)?;
-
-    Ok((rules, init_seq))
-}
-
-fn parse_rule(line: &str) -> Result<(Elem, Seq)> {
-    let (elem, seq) = line
-        .trim()
-        .split_once(" => ")
-        .context("expected ' => ' in rule")?;
-    let elem = Elem::new(elem)?;
-    let seq = parse_seq(seq)?;
-    Ok((elem, seq))
-}
-
-fn parse_seq(s: &str) -> Result<Seq> {
-    // 1. split up into strings
-    // 2. Elem::new each string
-
-    ensure!(s.is_ascii());
-    ensure!(s.chars().all(|c| c.is_ascii_alphabetic()));
-
-    let mut s = s.to_owned();
-    s.push('Z'); // sentinal value to make parsing easier
-
-    // Find the indices of the starts of words.
-    let mut uppers = vec![];
-    for i in 0..s.len() {
-        if get_char(&s, i).is_ascii_uppercase() {
-            uppers.push(i);
-        }
-    }
-
-    let mut out = vec![];
-    for ij in uppers.windows(2) {
-        let &[i, j] = ij else { unreachable!() };
-        let elem = Elem::new(&s[i..j])?;
-        out.push(elem);
-    }
-    Ok(out)
-}
-
-/// Only works for ascii strings.
-fn get_char(s: &str, i: usize) -> char {
-    let b = s.as_bytes()[i];
-    b as char
-}
-
-impl Elem {
-    fn new(code: &str) -> Result<Self> {
-        ensure!(!code.is_empty());
-        ensure!(code.len() <= 2);
-        ensure!(code.is_ascii());
-
-        let first = code.chars().next().unwrap();
-        ensure!(first.is_ascii_uppercase());
-
-        if code.len() == 2 {
-            let second = code.chars().skip(1).next().unwrap();
-            ensure!(second.is_ascii_lowercase());
-        }
-
-        Ok(Self {
-            code: code.to_owned(),
-        })
-    }
+fn longest_seq(rules: &RevRules) -> usize {
+    rules.keys().map(|seq| seq.len()).max().unwrap_or(0)
 }
 
 fn main() -> Result<()> {
-    let (rules, init_seq) = read_input()?;
-    let ans = possible_seqs(init_seq, &rules).len();
-    println!("{ans}");
+    let (rules, initial_seq) = input::read_input()?;
+    let rules = reverse_rules(&rules);
+    let target = vec![Elem::new("Ee")?];
+
+    let longest_seq = longest_seq(&rules);
+
+    let mut seen = HashSet::new();
+    seen.insert(initial_seq.clone());
+
+    let mut to_visit = VecDeque::new();
+    to_visit.push_back((initial_seq, 0));
+
+    while let Some((seq, dist)) = to_visit.pop_front() {
+        if seq == target {
+            println!("{dist}");
+            break;
+        }
+
+        for i in 0..seq.len() {
+            for len in 1..=longest_seq {
+                // (oops -- I got the bounds wrong the first time around)
+                if i + len > seq.len() {
+                    break;
+                }
+
+                let slice = &seq[i..i + len];
+                let Some(elems) = rules.get(slice) else {
+                    continue;
+                };
+
+                for e in elems {
+                    let mut new_seq = Vec::with_capacity(seq.len() + 1 - len);
+                    new_seq.extend_from_slice(&seq[..i]);
+                    new_seq.push(e.clone());
+                    new_seq.extend_from_slice(&seq[i + len..]);
+
+                    if !seen.contains(&new_seq) {
+                        seen.insert(new_seq.clone());
+                        to_visit.push_back((new_seq, dist + 1));
+                    }
+                }
+            }
+        }
+    }
+
     Ok(())
 }
+
+/*
+idea:
+BFS through the DAG
+stop when you reach "Ee"
+
+DAG?:
+* nodes are strings
+* edge from long string to shorter one if
+    there's a rule that lets us contract a slice of the long string
+
+*/
