@@ -1,0 +1,7 @@
+Ok, I think I'm actually gonna pause this one for now.
+
+The two-sided BFS idea sounded cool, but I'm thinking it's probably not fast enough.
+
+I'm realizing the input corresponds to a "grammar" in some formal sense, and I think we're supposed to do is parse the input string. But first, I'd like to understand how parsing works, so I'll probably read Crafting Interpreters chapters 5 and 6.
+
+But that all sounds like a pretty roundabout way to achieve my goal of writing a lot of code, so I'll pause this for now and come back to it.
