@@ -13,9 +13,25 @@ the plan:
 
 */
 
-use std::cmp::min;
+use std::cmp::{max, min};
 
 fn main() {
+    let boss = Fighter {
+        hp: 103,
+        damage: 9,
+        armor: 2,
+    };
+
+    let mut worst = 0;
+    for (cost, you) in possible_stats() {
+        if !fight(you, boss) {
+            worst = max(worst, cost);
+        }
+    }
+    dbg!(worst);
+}
+
+fn _main() {
     let boss = Fighter {
         hp: 103,
         damage: 9,
