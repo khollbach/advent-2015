@@ -1,5 +1,18 @@
 use std::ops::ControlFlow;
 
+const HARD_MODE: bool = true;
+
+/// A state is a moment in time where either player (you or the boss) is about
+/// to take their turn.
+///
+/// If the player dies, they're unable to take any more turns; and we choose
+/// *not* to return any would-be losing states. For example, if it's the boss'
+/// turn, and the player is about to take a lethal boss hit, then there is no
+/// state after this one.
+///
+/// We do include "winning states" though. If at any point the boss dies, we do
+/// represent that as a state where the boss is dead. You can check if a state
+/// is winning (i.e. the boss is dead) with the `.is_winning()` method.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct State {
     turn: Who,
@@ -95,6 +108,13 @@ impl State {
         // Player turn.
         //
 
+        if HARD_MODE {
+            this.you.hp = this.you.hp.saturating_sub(1);
+            if this.is_losing() {
+                return vec![];
+            }
+        }
+
         let mut out = vec![];
         for action in Self::SPELLS {
             let mut next = this.clone();
@@ -128,15 +148,18 @@ impl State {
         }
     }
 
-    /// Note: the intention is to filter losing states out of the API.
+    /// Note: our intention is to filter losing states out of the API.
     /// That is, never return a losing state to the user.
     ///
     /// That way the game-tree-search implementation only has to worry about
-    /// traversal and finding a winning state.
+    /// graph traversal and finding a winning state.
     fn is_losing(&self) -> bool {
         self.you.hp == 0
     }
 
+    /// If any of these returns ControlFlow::Break, then this action is not
+    /// possible: either because the player doens't have enough mana, or they're
+    /// trying to apply an effect that is already active.
     const SPELLS: [fn(&mut Self) -> ControlFlow<()>; 5] = [
         Self::missile,
         Self::drain,
