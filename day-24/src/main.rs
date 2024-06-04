@@ -1,71 +1,69 @@
-use std::{cmp::Reverse, io};
+use std::{cmp::Reverse, collections::HashSet, io};
 
-use itertools::Itertools;
+use anyhow::Result;
 
-fn main() {
-    let mut nums = io::stdin()
-        .lines()
-        .map(|l| l.unwrap().parse::<u32>().unwrap())
-        .collect_vec();
-    let sum: u32 = nums.iter().sum();
-    dbg!(nums.len());
-    dbg!(sum);
-    dbg!(sum / 3, sum % 3);
-    // note: nums are unique
+fn read_input() -> Result<Vec<u32>> {
+    io::stdin().lines().map(|l| Ok(l?.parse()?)).collect()
+}
 
+fn assert_unique(nums: &[u32]) {
+    let set: HashSet<_> = nums.iter().collect();
+    assert_eq!(set.len(), nums.len());
+}
+
+fn main() -> Result<()> {
+    let mut nums = read_input()?;
+    assert_unique(&nums);
     nums.sort_by_key(|&x| Reverse(x));
 
-    // Group A
-    let mut ss1 = subsets(&nums, sum / 3);
-    dbg!(ss1.len());
-    ss1.sort_by_key(|s| s.len());
-    // dbg!(&ss1[..10]);
+    let sum: u32 = nums.iter().sum();
+    assert_eq!(sum % 3, 0);
+    let target_sum = sum / 3;
 
-    let mut short = vec![];
+    let group1 = first_group(&nums, target_sum);
+    let ans = group1.into_iter().map(product).min().unwrap();
+    assert_eq!(ans, 11_846_773_891);
+    dbg!(ans);
 
-    for s1 in ss1 {
-        if s1.len() > 6 {
-            break;
+    Ok(())
+}
+
+fn product(nums: Vec<u32>) -> u64 {
+    nums.into_iter().map(|x| x as u64).product()
+}
+
+/// Return all the possibilities for Group 1.
+///
+/// They'll each have the same size. All we have to do is take the one with the
+/// minimum product.
+fn first_group(nums: &[u32], target_sum: u32) -> Vec<Vec<u32>> {
+    for size in 0..nums.len() {
+        let mut out = vec![];
+        for group1 in subsets_of_size(nums, target_sum, size) {
+            let rest = difference(nums, &group1);
+            if !subsets(&rest, target_sum).is_empty() {
+                out.push(group1);
+            }
         }
-        let rest = nums
-            .iter()
-            .copied()
-            .filter(|x| !s1.contains(x))
-            .collect_vec();
-        let ok = !subsets(&rest, sum / 3).is_empty();
-        if ok {
-            short.push(s1);
+        if !out.is_empty() {
+            return out;
         }
     }
-
-    dbg!(short.len());
-
-    // short.sort_by_key(|s| qe(s));
-    // dbg!(&short[0], qe(&short[0]));
-
-    let min = short.iter().map(|s| qe(s)).min().unwrap();
-    dbg!(min);
-
-    // guess: 25060087
-    // * wrong answer, too low
-    // * maybe integer overflow?
-
-    // yep! The product was overflowing u32; but u64 is fine.
-    // ans: 11846773891
-
-    // todo: part 2
+    panic!();
 }
 
-fn qe(set: &[u32]) -> u64 {
-    set.iter().map(|&x| x as u64).product()
+/// Set difference; naive O(n^2) impl.
+fn difference(a: &[u32], b: &[u32]) -> Vec<u32> {
+    a.iter().copied().filter(|x| !b.contains(x)).collect()
 }
 
-fn subsets(nums: &[u32], target: u32) -> Vec<Vec<u32>> {
+/// Return all subsets whose sum is `value` and whose length is `size`.
+fn subsets_of_size(nums: &[u32], value: u32, size: usize) -> Vec<Vec<u32>> {
+    // Should be faster if sorted decreasing.
     debug_assert!(nums.windows(2).all(|pair| pair[0] > pair[1]));
 
-    // Base case.
     if nums.is_empty() {
-        if target == 0 {
+        if value == 0 && size == 0 {
             let empty_set = vec![];
             return vec![empty_set];
         } else {
@@ -76,17 +74,20 @@ fn subsets(nums: &[u32], target: u32) -> Vec<Vec<u32>> {
     let mut out = vec![];
 
     // Don't use nums[0].
-    for s in subsets(&nums[1..], target) {
+    for s in subsets_of_size(&nums[1..], value, size) {
         out.push(s);
     }
 
     let x = nums[0];
-    let Some(smaller_target) = target.checked_sub(x) else {
+    let Some(smaller_value) = value.checked_sub(x) else {
+        return out;
+    };
+    let Some(smaller_size) = size.checked_sub(1) else {
         return out;
     };
 
     // Do use nums[0].
-    for s in subsets(&nums[1..], smaller_target) {
+    for s in subsets_of_size(&nums[1..], smaller_value, smaller_size) {
         let mut s2 = vec![];
         s2.extend_from_slice(&s);
         s2.push(x);
@@ -95,13 +96,39 @@ fn subsets(nums: &[u32], target: u32) -> Vec<Vec<u32>> {
     out
 }
 
-/*
+/// Return all subsets whose sum is the target value.
+fn subsets(nums: &[u32], value: u32) -> Vec<Vec<u32>> {
+    // Should be faster if sorted decreasing.
+    debug_assert!(nums.windows(2).all(|pair| pair[0] > pair[1]));
 
-#pkgs in group A:  5..
+    // Base case.
+    if nums.is_empty() {
+        if value == 0 {
+            let empty_set = vec![];
+            return vec![empty_set];
+        } else {
+            return vec![];
+        }
+    }
 
-groups of pkgs of that size (e.g. 29 choose 5)
-* filter for sum==520
+    let mut out = vec![];
 
-of remaining pkgs, partition in two, (s.t. sum == 520)
+    // Don't use nums[0].
+    for s in subsets(&nums[1..], value) {
+        out.push(s);
+    }
 
-*/
+    let x = nums[0];
+    let Some(smaller_value) = value.checked_sub(x) else {
+        return out;
+    };
+
+    // Do use nums[0].
+    for s in subsets(&nums[1..], smaller_value) {
+        let mut s2 = vec![];
+        s2.extend_from_slice(&s);
+        s2.push(x);
+        out.push(s2);
+    }
+    out
+}
