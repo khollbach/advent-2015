@@ -17,12 +17,15 @@ fn main() -> Result<()> {
     nums.sort_by_key(|&x| Reverse(x));
 
     let sum: u32 = nums.iter().sum();
-    assert_eq!(sum % 3, 0);
-    let target_sum = sum / 3;
+    // assert_eq!(sum % 3, 0); // part 1
+    // let target_sum = sum / 3; // part 1
+    assert_eq!(sum % 4, 0);
+    let target_sum = sum / 4;
 
     let group1 = first_group(&nums, target_sum);
     let ans = group1.into_iter().map(product).min().unwrap();
-    assert_eq!(ans, 11_846_773_891);
+    // assert_eq!(ans, 11_846_773_891); // part 1
+    assert_eq!(ans, 80_393_059);
     dbg!(ans);
 
     Ok(())
@@ -37,6 +40,31 @@ fn product(nums: Vec<u32>) -> u64 {
 /// They'll each have the same size. All we have to do is take the one with the
 /// minimum product.
 fn first_group(nums: &[u32], target_sum: u32) -> Vec<Vec<u32>> {
+    // author's note: this code is pretty hacked-together, but hey it works
+
+    for size in 0..nums.len() {
+        let mut out = vec![];
+        for group1 in subsets_of_size(nums, target_sum, size) {
+            let rest = difference(nums, &group1);
+            if subsets(&rest, target_sum).into_iter().any(|s| {
+                let rest = difference(&group1, &s);
+                !subsets(&rest, target_sum).is_empty()
+            }) {
+                out.push(group1);
+            }
+        }
+        if !out.is_empty() {
+            return out;
+        }
+    }
+    panic!();
+}
+
+/// Return all the possibilities for Group 1.
+///
+/// They'll each have the same size. All we have to do is take the one with the
+/// minimum product.
+fn first_group_part_1(nums: &[u32], target_sum: u32) -> Vec<Vec<u32>> {
     for size in 0..nums.len() {
         let mut out = vec![];
         for group1 in subsets_of_size(nums, target_sum, size) {
