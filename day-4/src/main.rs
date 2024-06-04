@@ -7,7 +7,7 @@ fn main() {
         concat.extend_from_slice(i.to_string().as_bytes());
 
         let h = md5_hash(&concat);
-        if h.starts_with(&"0".repeat(5)) {
+        if h.starts_with(&"0".repeat(6)) {
             dbg!(i);
             break;
         }
