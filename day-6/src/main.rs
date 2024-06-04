@@ -5,7 +5,7 @@ use anyhow::{bail, ensure, Context, Result};
 fn main() -> Result<()> {
     let instrs = read_input()?;
 
-    let mut grid = Grid::new();
+    let mut grid = Grid2::new();
     for i in instrs {
         let r = i.rect;
         match i.op {
@@ -14,17 +14,65 @@ fn main() -> Result<()> {
             Op::Toggle => grid.toggle(r),
         }
     }
-    let ans = grid.num_lit();
+    let ans = grid.total_brightness();
     dbg!(ans);
 
     Ok(())
 }
 
-struct Grid {
+struct Grid2 {
+    rows: Vec<Vec<u32>>,
+}
+
+impl Grid2 {
+    fn new() -> Self {
+        Self {
+            rows: vec![vec![0; 1_000]; 1_000],
+        }
+    }
+
+    fn turn_on(&mut self, r: Rect) {
+        for row in r.top_left.row..=r.bot_right.row {
+            for col in r.top_left.col..=r.bot_right.col {
+                self.rows[row][col] += 1;
+            }
+        }
+    }
+
+    fn turn_off(&mut self, r: Rect) {
+        for row in r.top_left.row..=r.bot_right.row {
+            for col in r.top_left.col..=r.bot_right.col {
+                self.rows[row][col] = self.rows[row][col].saturating_sub(1);
+            }
+        }
+    }
+
+    fn toggle(&mut self, r: Rect) {
+        for row in r.top_left.row..=r.bot_right.row {
+            for col in r.top_left.col..=r.bot_right.col {
+                self.rows[row][col] += 2;
+            }
+        }
+    }
+
+    fn total_brightness(&self) -> u32 {
+        let mut count = 0;
+        for i in 0..self.rows.len() {
+            for j in 0..self.rows[i].len() {
+                count += self.rows[i][j];
+            }
+        }
+        count
+    }
+}
+
+#[allow(dead_code)]
+struct Grid1 {
     rows: Vec<Vec<bool>>,
 }
 
-impl Grid {
+#[allow(dead_code)]
+impl Grid1 {
     fn new() -> Self {
         Self {
             rows: vec![vec![false; 1_000]; 1_000],
