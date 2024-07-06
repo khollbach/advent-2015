@@ -1,8 +1,44 @@
-use std::io::{self, Read};
+use std::io::{self, BufReader, Read};
 
 use anyhow::{Context, Result};
 
 fn main() -> Result<()> {
+    let stdin = BufReader::new(io::stdin());
+    let json: serde_json::Value = serde_json::from_reader(stdin)?;
+
+    dbg!(part_2(&json));
+
+    Ok(())
+}
+
+fn part_2(json: &serde_json::Value) -> i32 {
+    let mut out = 0_i32;
+    match json {
+        serde_json::Value::Number(x) => {
+            let x: i32 = x.as_i64().unwrap().try_into().unwrap();
+            out += x;
+        }
+        serde_json::Value::Array(a) => {
+            for elem in a {
+                out += part_2(elem);
+            }
+        }
+        serde_json::Value::Object(o) => {
+            let skip = o.values().any(|v| v.as_str() == Some("red"));
+
+            if !skip {
+                for elem in o.values() {
+                    out += part_2(elem);
+                }
+            }
+        }
+        _ => (),
+    }
+    out
+}
+
+#[allow(dead_code)]
+fn part_1() -> Result<()> {
     let mut json = String::new();
     io::stdin().read_to_string(&mut json)?;
     dbg!(number_sum(&json)?);
