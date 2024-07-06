@@ -4,6 +4,30 @@ use anyhow::Result;
 
 fn main() -> Result<()> {
     let mut code_total = 0;
+    let mut encoded_total = 0;
+    for l in io::stdin().lines() {
+        let l = l?;
+        code_total += l.len();
+        encoded_total += encoded_len(&l);
+    }
+    dbg!(encoded_total - code_total);
+    Ok(())
+}
+
+fn encoded_len(string_literal: &str) -> usize {
+    let s = string_literal;
+    assert!(s.is_ascii());
+
+    // Each quote and backslash must be escaped.
+    let special_chars = s.chars().filter(|&c| c == '"' || c == '\\').count();
+
+    // We wrap the final string in a pair of quotes, hence the +2.
+    s.len() + special_chars + 2
+}
+
+#[allow(dead_code)]
+fn part_1() -> Result<()> {
+    let mut code_total = 0;
     let mut mem_total = 0;
     for l in io::stdin().lines() {
         let l = l?;
