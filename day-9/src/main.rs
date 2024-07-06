@@ -43,6 +43,13 @@ fn main() -> Result<()> {
         .unwrap();
     dbg!(shortest_path);
 
+    let longest_path = perms(g.len())
+        .into_iter()
+        .map(|p| g.path_len(&p))
+        .max()
+        .unwrap();
+    dbg!(longest_path);
+
     Ok(())
 }
 
