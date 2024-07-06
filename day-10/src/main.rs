@@ -6,6 +6,12 @@ fn main() {
         s = next(&s);
     }
     dbg!(s.len());
+
+    let mut s = "1321131112".to_string();
+    for _ in 0..50 {
+        s = next(&s);
+    }
+    dbg!(s.len());
 }
 
 fn next(s: &str) -> String {
