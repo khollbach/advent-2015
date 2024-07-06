@@ -137,10 +137,11 @@ impl Graph {
             total += self.matrix[i][j] + self.matrix[j][i];
         }
 
-        // Close the loop.
-        let i = ring[0]; // BUG: originally was using 0 and n-1 instead of ring[0] and ring[n-1]
-        let j = ring[n - 1];
-        total += self.matrix[i][j] + self.matrix[j][i];
+        // (Ignore for part 2.)
+        // // Close the loop.
+        // let i = ring[0]; // BUG: originally was using 0 and n-1 instead of ring[0] and ring[n-1]
+        // let j = ring[n - 1];
+        // total += self.matrix[i][j] + self.matrix[j][i];
 
         total
     }
