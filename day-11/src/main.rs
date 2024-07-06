@@ -1,5 +1,6 @@
 fn main() {
-    let mut pw = *b"hxbxwxba";
+    // let mut pw = *b"hxbxwxba";
+    let mut pw = *b"hxbxxyzz";
     loop {
         pw = incr(pw);
         if is_valid(pw) {
